@@ -12,3 +12,6 @@ serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 tokio = { version = "1", features = ["full"] }
 dotenv = "0.15"
+axum = "0.7" # A modern web framework
+tower-http = { version = "0.5", features = ["cors"] }
+axum-server = "0.5"
