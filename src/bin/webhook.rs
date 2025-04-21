@@ -5,6 +5,10 @@ use std::sync::Arc;
 use swapper::SwapExecutor;
 use wallet::BotWallet;
 
+use std::fs::{self, File};
+use std::io::{Read, Write};
+use std::path::Path;
+
 use axum::{extract::Json, http::StatusCode, routing::post, Router};
 //use axum_server::bind;
 use axum::extract::State;
@@ -42,11 +46,39 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     // Initialize the bot wallet
     println!("Initializing bot wallet...");
+
+    // Define wallet key path
+    let key_file_path = ".wallet_key";
+
+    // Try to load from environment first
     let bot_wallet = match std::env::var("BOT_WALLET_PRIVATE_KEY") {
-        Ok(key) => BotWallet::from_private_key(&key)?,
+        Ok(key) => {
+            println!("Using wallet from environment variable");
+            BotWallet::from_private_key(&key)?
+        }
         Err(_) => {
-            println!("No wallet key found, generating new wallet...");
-            BotWallet::generate_new()
+            // If env var not set, try to load from file
+            if Path::new(key_file_path).exists() {
+                println!("Loading wallet from file...");
+                let mut file = File::open(key_file_path)?;
+                let mut key = String::new();
+                file.read_to_string(&mut key)?;
+                BotWallet::from_private_key(&key.trim())?
+            } else {
+                // If no file exists, generate new wallet and save to file
+                println!("No wallet key found, generating new wallet...");
+                let wallet = BotWallet::generate_new();
+
+                // Get the private key from the wallet
+                let private_key = bs58::encode(wallet.keypair().to_bytes()).into_string();
+
+                // Save to file
+                let mut file = File::create(key_file_path)?;
+                file.write_all(private_key.as_bytes())?;
+                println!("Saved new wallet key to {}", key_file_path);
+
+                wallet
+            }
         }
     };
     println!("Bot wallet address: {}", bot_wallet.pubkey_string());
@@ -76,7 +108,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         });
 
     // Create the server address
-    let addr = SocketAddr::from(([127, 0, 0, 1], port));
+    let addr = SocketAddr::from(([0, 0, 0, 0], port));
     println!("Webhook server listening on http://{}", addr);
 
     // Start the server

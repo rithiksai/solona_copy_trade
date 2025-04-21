@@ -3,6 +3,10 @@ name = "solona_copy_trade"
 version = "0.1.0"
 edition = "2021"
 
+[[bin]]
+name = "webhook"
+path = "src/bin/webhook.rs"
+
 [dependencies]
 reqwest = { version = "0.11", features = [
     "json",
