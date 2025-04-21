@@ -1,0 +1,5 @@
+target/
+.git/
+.wallet_key
+.env
+
