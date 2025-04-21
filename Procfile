@@ -1,1 +1,1 @@
-web: ./target/release/webhook
+web: cargo run --release
